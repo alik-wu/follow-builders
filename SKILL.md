@@ -11,27 +11,6 @@ digestible summaries of what they're saying.
 
 Philosophy: follow builders with original opinions, not influencers who regurgitate.
 
-**No API keys or environment variables are required from users.** All content
-(X/Twitter posts and YouTube transcripts) is fetched centrally and served via
-a public feed. Users only need API keys if they choose Telegram or email delivery.
-
-## Detecting Platform
-
-Before doing anything, detect which platform you're running on by running:
-```bash
-which openclaw 2>/dev/null && echo "PLATFORM=openclaw" || echo "PLATFORM=other"
-```
-
-- **OpenClaw** (`PLATFORM=openclaw`): Persistent agent with built-in messaging channels.
-  Delivery is automatic via OpenClaw's channel system. No need to ask about delivery method.
-  Cron uses `openclaw cron add`.
-
-- **Other** (Claude Code, Cursor, etc.): Non-persistent agent. Terminal closes = agent stops.
-  For automatic delivery, users MUST set up Telegram or Email. Without it, digests
-  are on-demand only (user types `/ai` to get one).
-  Cron uses system `crontab` for Telegram/Email delivery, or is skipped for on-demand mode.
-
-Save the detected platform in config.json as `"platform": "openclaw"` or `"platform": "other"`.
 
 ## First Run — Onboarding
 
@@ -63,89 +42,14 @@ Then ask: "What time works best? And what timezone are you in?"
 
 For weekly, also ask which day.
 
-### Step 3: Delivery Method
-
-**If OpenClaw:** SKIP this step entirely. OpenClaw already delivers messages to the
-user's Telegram/Discord/WhatsApp/etc. Set `delivery.method` to `"stdout"` in config
-and move on.
-
-**If non-persistent agent (Claude Code, Cursor, etc.):**
-
-Tell the user:
-
-"Since you're not using a persistent agent, I need a way to send you the digest
-when you're not in this terminal. You have two options:
-
-1. **Telegram** — I'll send it as a Telegram message (free, takes ~5 min to set up)
-2. **Email** — I'll email it to you (requires a free Resend account)
-
-Or you can skip this and just type /ai whenever you want your digest — but it
-won't arrive automatically."
-
-**If they choose Telegram:**
-Guide the user step by step:
-1. Open Telegram and search for @BotFather
-2. Send /newbot to BotFather
-3. Choose a name (e.g. "My AI Digest")
-4. Choose a username (e.g. "myaidigest_bot") — must end in "bot"
-5. BotFather will give you a token like "7123456789:AAH..." — copy it
-6. Now open a chat with your new bot (search its username) and send it any message (e.g. "hi")
-7. This is important — you MUST send a message to the bot first, otherwise delivery won't work
-
-Then add the token to the .env file. To get the chat ID, run:
-```bash
-curl -s "https://api.telegram.org/bot<TOKEN>/getUpdates" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['result'][0]['message']['chat']['id'])" 2>/dev/null || echo "No messages found — make sure you sent a message to your bot first"
-```
-
-Save the chat ID in config.json under `delivery.chatId`.
-
-**If they choose Email:**
-Ask for their email address.
-Then they need a Resend API key:
-1. Go to https://resend.com
-2. Sign up (free tier gives 100 emails/day — more than enough)
-3. Go to API Keys in the dashboard
-4. Create a new key and copy it
-
-Add the key to the .env file.
-
-**If they choose on-demand:**
-Set `delivery.method` to `"stdout"`. Tell them: "No problem — just type /ai
-whenever you want your digest. No automatic delivery will be set up."
-
-### Step 4: Language
+### Step 3: Language
 
 Ask: "What language do you prefer for your digest?"
 - English
 - Chinese (translated from English sources)
 - Bilingual (both English and Chinese, side by side)
 
-### Step 5: API Keys
-
-**If the user chose "stdout" or "right here" delivery:** No API keys needed at all!
-All content is fetched centrally. Skip to Step 6.
-
-**If the user chose Telegram or Email delivery:**
-Create the .env file with only the delivery key they need:
-
-```bash
-mkdir -p ~/.follow-builders
-cat > ~/.follow-builders/.env << 'ENVEOF'
-# Telegram bot token (only if using Telegram delivery)
-# TELEGRAM_BOT_TOKEN=paste_your_token_here
-
-# Resend API key (only if using email delivery)
-# RESEND_API_KEY=paste_your_key_here
-ENVEOF
-```
-
-Uncomment only the line they need. Open the file for them to paste the key.
-
-Tell the user: "All podcast and X/Twitter content is fetched for you automatically
-from a central feed — no API keys needed for that. You only need a key for
-[Telegram/email] delivery."
-
-### Step 6: Show Sources
+### Step 4: Show Sources
 
 Show the full list of default builders and podcasts being tracked.
 Read from `config/default-sources.json` and display as a clean list.
@@ -153,7 +57,7 @@ Read from `config/default-sources.json` and display as a clean list.
 Tell the user: "The source list is curated and updated centrally. You'll
 automatically get the latest builders and podcasts without doing anything."
 
-### Step 7: Configuration Reminder
+### Step 5: Configuration Reminder
 
 "All your settings can be changed anytime through conversation:
 - 'Switch to weekly digests'
@@ -163,7 +67,7 @@ automatically get the latest builders and podcasts without doing anything."
 
 No need to edit any files — just tell me what you want."
 
-### Step 8: Set Up Cron
+### Step 6: Set Up Cron
 
 Save the config (include all fields — fill in the user's choices):
 ```bash
@@ -178,6 +82,7 @@ cat > ~/.follow-builders/config.json << 'CFGEOF'
   "delivery": {
     "method": "<stdout, telegram, or email>",
     "chatId": "<telegram chat ID, only if telegram>",
+    "accountId": "<weixin account id, only if weixin>",
     "email": "<email address, only if email>"
   },
   "onboardingComplete": true
