@@ -92,96 +92,8 @@ CFGEOF
 
 Then set up the scheduled job based on platform AND delivery method:
 
-**OpenClaw:**
 
-Build the cron expression from the user's preferences:
-- Daily at 8am → `"0 8 * * *"`
-- Weekly on Monday at 9am → `"0 9 * * 1"`
-
-**IMPORTANT: Do NOT use `--channel last`.** It fails when the user has multiple
-channels configured (e.g. telegram + feishu) because the isolated cron session
-has no "last" channel context. Always detect and specify the exact channel and target.
-
-**Step 1: Detect the current channel and get the target ID.**
-
-The user is messaging you through a specific channel right now. Ask them:
-"Should I deliver your daily digest to this same chat?"
-
-If yes, you need two things: the **channel name** and the **target ID**.
-
-How to get the target ID for each channel:
-
-| Channel | Target format | How to find it |
-|---------|--------------|----------------|
-| Telegram | Numeric chat ID (e.g. `123456789` for DMs, `-1001234567890` for groups) | Run `openclaw logs --follow`, send a test message, read the `from.id` field. Or: `curl "https://api.telegram.org/bot<token>/getUpdates"` and look for `chat.id` |
-| Telegram forum | Group ID with topic (e.g. `-1001234567890:topic:42`) | Same as above, include the topic thread ID |
-| Feishu | User open_id (e.g. `ou_e67df1a850910efb902462aeb87783e5`) or group chat_id (e.g. `oc_xxx`) | Check `openclaw pairing list feishu` or gateway logs after the user messages the bot |
-| Discord | `user:<user_id>` for DMs, `channel:<channel_id>` for channels | User enables Developer Mode in Discord settings, right-clicks to copy IDs |
-| Slack | `channel:<channel_id>` (e.g. `channel:C1234567890`) | Right-click channel name in Slack, copy link, extract the ID |
-| WhatsApp | Phone number with country code (e.g. `+15551234567`) | The user provides it |
-| Signal | Phone number | The user provides it |
-
-**Step 2: Create the cron job with explicit channel and target.**
-```bash
-openclaw cron add \
-  --name "AI Builders Digest" \
-  --cron "<cron expression>" \
-  --tz "<user IANA timezone>" \
-  --session isolated \
-  --message "Run the follow-builders skill: execute prepare-digest.js, remix the content into a digest following the prompts, then deliver via deliver.js" \
-  --announce \
-  --channel <channel name> \
-  --to "<target ID>" \
-  --exact
-```
-
-Examples:
-```bash
-# Telegram DM
-openclaw cron add --name "AI Builders Digest" --cron "0 8 * * *" --tz "Asia/Shanghai" --session isolated --message "..." --announce --channel telegram --to "123456789" --exact
-
-# Feishu
-openclaw cron add --name "AI Builders Digest" --cron "0 8 * * *" --tz "Asia/Shanghai" --session isolated --message "..." --announce --channel feishu --to "ou_e67df1a850910efb902462aeb87783e5" --exact
-
-# Discord channel
-openclaw cron add --name "AI Builders Digest" --cron "0 8 * * *" --tz "America/New_York" --session isolated --message "..." --announce --channel discord --to "channel:1234567890" --exact
-```
-
-**Step 3: Verify the cron job works by running it once immediately.**
-```bash
-openclaw cron list
-openclaw cron run <jobId>
-```
-
-Wait for the test run to complete and confirm the user actually received the
-digest in their channel. If it fails, check the error:
-```bash
-openclaw cron runs --id <jobId> --limit 1
-```
-
-Common errors and fixes:
-- "Channel is required when multiple channels are configured" → you used `--channel last`, specify the exact channel
-- "Delivering to X requires target" → you forgot `--to`, add the target ID
-- "No agent" → add `--agent <agent-id>` if the OpenClaw instance has multiple agents
-
-Do NOT proceed to the welcome digest step until the cron delivery has been verified.
-
-**Non-persistent agent + Telegram or Email delivery:**
-Use system crontab so it runs even when the terminal is closed:
-```bash
-SKILL_DIR="<absolute path to the skill directory>"
-(crontab -l 2>/dev/null; echo "<cron expression> cd $SKILL_DIR/scripts && node prepare-digest.js 2>/dev/null | node deliver.js 2>/dev/null") | crontab -
-```
-Note: this runs the prepare script and pipes its output directly to delivery,
-bypassing the agent entirely. The digest won't be remixed by an LLM — it will
-deliver the raw JSON. For full remixed digests, the user should use /ai manually
-or switch to OpenClaw.
-
-**Non-persistent agent + on-demand only (no Telegram/Email):**
-Skip cron setup entirely. Tell the user: "Since you chose on-demand delivery,
-there's no scheduled job. Just type /ai whenever you want your digest."
-
-### Step 9: Welcome Digest
+### Step 7: Welcome Digest
 
 **DO NOT skip this step.** Immediately after setting up the cron job, generate
 and send the user their first digest so they can see what it looks like.
@@ -200,7 +112,7 @@ After delivering the digest, ask for feedback:
 Just tell me and I'll adjust."
 
 Then add the appropriate closing line based on their setup:
-- **OpenClaw or Telegram/Email delivery:** "Your next digest will arrive
+-  "Your next digest will arrive
   automatically at [their chosen time]."
 - **On-demand only:** "Type /ai anytime you want your next digest."
 
