@@ -80,7 +80,7 @@ cat > ~/.follow-builders/config.json << 'CFGEOF'
   "deliveryTime": "<HH:MM>",
   "weeklyDay": "<day of week, only if weekly>",
   "delivery": {
-    "method": "<stdout, telegram, or email>",
+    "method": "<stdout, telegram, weixin, or email>",
     "chatId": "<telegram chat ID, only if telegram>",
     "accountId": "<weixin account id, only if weixin>",
     "email": "<email address, only if email>"
@@ -214,6 +214,9 @@ Read `config.language` from the JSON:
 
 Read `config.delivery.method` from the JSON:
 
+**If "weixin":**
+send the digest to the weixin user accordingt to `config.delivery.accountId`
+
 **If "telegram" or "email":**
 ```bash
 echo '<your digest text>' > /tmp/fb-digest.txt
@@ -243,11 +246,6 @@ open an issue at https://github.com/zarazhangrui/follow-builders."
 
 ### Language Changes
 - "Switch to Chinese/English/bilingual" → Update `language` in config.json
-
-### Delivery Changes
-- "Switch to Telegram/email" → Update `delivery.method` in config.json, guide user through setup if needed
-- "Change my email" → Update `delivery.email` in config.json
-- "Send to this chat instead" → Set `delivery.method` to "stdout"
 
 ### Prompt Changes
 When a user wants to customize how their digest sounds, copy the relevant prompt
